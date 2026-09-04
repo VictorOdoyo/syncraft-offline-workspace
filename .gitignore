@@ -1,0 +1,16 @@
+.env
+!.env.example
+.dart_tool/
+.flutter-plugins-dependencies
+build/
+coverage/
+*.db
+*.db-shm
+*.db-wal
+*.exe
+*.log
+.idea/
+node_modules/
+playwright-report/
+test-results/
+local/
