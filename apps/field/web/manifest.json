@@ -1,11 +1,11 @@
 {
-    "name": "syncraft",
-    "short_name": "syncraft",
+    "name": "Syncraft Field Workspace",
+    "short_name": "Syncraft",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#f8fafb",
+    "theme_color": "#087f72",
+    "description": "Offline field notes and inspections",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
