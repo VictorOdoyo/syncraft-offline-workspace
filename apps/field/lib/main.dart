@@ -1,122 +1,53 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'data/local_store.dart';
+import 'data/demo_seed.dart';
+import 'domain/workspace_controller.dart';
+import 'sync/api_client.dart';
+import 'sync/sync_engine.dart';
+import 'sync/live_hints.dart';
+import 'ui/theme.dart';
+import 'ui/inspection_list.dart';
+import 'ui/inspection_detail.dart';
+import 'ui/search_toolbar.dart';
+import 'ui/sync_status.dart';
+import 'ui/login_dialog.dart';
+import 'ui/new_inspection.dart';
+import 'ui/confirm.dart';
 
-void main() {
-  runApp(const MyApp());
+Future<void> main()async{
+  WidgetsFlutterBinding.ensureInitialized();
+  try{
+    final store=await LocalStore.open();
+    const endpoint=String.fromEnvironment('API_URL',defaultValue:'http://127.0.0.1:8091');
+    final sync=SyncEngine(store,ApiClient(endpoint));final controller=WorkspaceController(store,sync);await controller.refresh();
+    runApp(SyncraftApp(controller:controller));
+  }catch(e){runApp(MaterialApp(home:Scaffold(body:Center(child:Padding(padding:const EdgeInsets.all(24),child:SelectableText('Local workspace could not open.\n$e'))))));}
 }
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
+class SyncraftApp extends StatelessWidget{
+  final WorkspaceController controller;
+  const SyncraftApp({super.key,required this.controller});
+  @override Widget build(BuildContext context)=>MaterialApp(title:'Syncraft Field Workspace',debugShowCheckedModeBanner:false,theme:workspaceTheme(),home:WorkspaceScreen(controller:controller));
 }
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
+class WorkspaceScreen extends StatefulWidget{
+  final WorkspaceController controller;const WorkspaceScreen({super.key,required this.controller});
+  @override State<WorkspaceScreen> createState()=>_WorkspaceScreenState();
 }
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
+class _WorkspaceScreenState extends State<WorkspaceScreen> with WidgetsBindingObserver{
+  LiveHints? hints;
+  @override void initState(){super.initState();WidgetsBinding.instance.addObserver(this);}
+  @override void didChangeAppLifecycleState(AppLifecycleState state){if(state==AppLifecycleState.resumed){unawaited(widget.controller.sync.synchronize());}}
+  @override void dispose(){WidgetsBinding.instance.removeObserver(this);unawaited(hints?.close());super.dispose();}
+  Future<void> connect()async{if(await loginDialog(context,widget.controller.sync)){await hints?.close();hints=LiveHints(widget.controller.sync);await hints!.connect();}}
+  @override Widget build(BuildContext context)=>ListenableBuilder(listenable:widget.controller,builder:(context,_){final c=widget.controller;final record=c.selected;
+    return Scaffold(appBar:AppBar(title:const Row(children:[Icon(Icons.hub_outlined,color:Color(0xff087f72)),SizedBox(width:10),Text('Syncraft')]),actions:[
+      IconButton(tooltip:'New inspection',onPressed:()=>newInspection(context,c),icon:const Icon(Icons.add)),
+      if(c.inspections.isEmpty)TextButton(onPressed:()async{try{await loadDemo(c.store);await c.refresh();}catch(e){if(context.mounted){showError(context,e);}}},child:const Text('Load demo')),
+    ]),body:Column(children:[SyncStatus(controller:c,onConnect:connect),Expanded(child:LayoutBuilder(builder:(context,constraints){
+      final list=Column(children:[SearchToolbar(controller:c),Padding(padding:const EdgeInsets.symmetric(horizontal:16),child:Align(alignment:Alignment.centerLeft,child:Text('${c.filtered.length} inspections',style:const TextStyle(color:Color(0xff596970))))),Expanded(child:InspectionList(controller:c))]);
+      final detail=record==null?const Center(child:Column(mainAxisSize:MainAxisSize.min,children:[Icon(Icons.assignment_outlined,size:64,color:Color(0xff8ca6a1)),SizedBox(height:16),Text('Select an inspection')])):InspectionDetail(record:record,controller:c);
+      if(constraints.maxWidth<850){return record==null?list:detail;}
+      return Row(children:[SizedBox(width:400,child:list),const VerticalDivider(width:1),Expanded(child:detail)]);
+    }))]));
+  });
 }
