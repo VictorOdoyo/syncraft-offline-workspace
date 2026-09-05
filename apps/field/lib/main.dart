@@ -14,6 +14,11 @@ import 'ui/sync_status.dart';
 import 'ui/login_dialog.dart';
 import 'ui/new_inspection.dart';
 import 'ui/confirm.dart';
+import 'ui/attachment_panel.dart';
+import 'ui/history_panel.dart';
+import 'ui/recovery_panel.dart';
+import 'ui/devices_panel.dart';
+import 'ui/audit_panel.dart';
 
 Future<void> main()async{
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,13 +44,15 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> with WidgetsBindingOb
   @override void didChangeAppLifecycleState(AppLifecycleState state){if(state==AppLifecycleState.resumed){unawaited(widget.controller.sync.synchronize());}}
   @override void dispose(){WidgetsBinding.instance.removeObserver(this);unawaited(hints?.close());super.dispose();}
   Future<void> connect()async{if(await loginDialog(context,widget.controller.sync)){await hints?.close();hints=LiveHints(widget.controller.sync);await hints!.connect();}}
+  Future<void> openTool(String tool)async{final c=widget.controller;final panel=switch(tool){'recovery'=>RecoveryPanel(controller:c),'devices'=>DevicesPanel(sync:c.sync),_=>AuditPanel(api:c.sync.api)};await showDialog<void>(context:context,builder:(context)=>Dialog(child:SizedBox(width:760,height:640,child:Column(children:[Align(alignment:Alignment.centerRight,child:IconButton(tooltip:'Close panel',onPressed:()=>Navigator.pop(context),icon:const Icon(Icons.close))),Expanded(child:panel)]))));}
   @override Widget build(BuildContext context)=>ListenableBuilder(listenable:widget.controller,builder:(context,_){final c=widget.controller;final record=c.selected;
     return Scaffold(appBar:AppBar(title:const Row(children:[Icon(Icons.hub_outlined,color:Color(0xff087f72)),SizedBox(width:10),Text('Syncraft')]),actions:[
       IconButton(tooltip:'New inspection',onPressed:()=>newInspection(context,c),icon:const Icon(Icons.add)),
+      PopupMenuButton<String>(tooltip:'Workspace tools',onSelected:openTool,itemBuilder:(_)=>[const PopupMenuItem(value:'recovery',child:Text('Device recovery')),PopupMenuItem(value:'devices',enabled:c.sync.connected,child:const Text('Registered devices')),PopupMenuItem(value:'audit',enabled:c.sync.connected,child:const Text('Workspace audit'))]),
       if(c.inspections.isEmpty)TextButton(onPressed:()async{try{await loadDemo(c.store);await c.refresh();}catch(e){if(context.mounted){showError(context,e);}}},child:const Text('Load demo')),
     ]),body:Column(children:[SyncStatus(controller:c,onConnect:connect),Expanded(child:LayoutBuilder(builder:(context,constraints){
       final list=Column(children:[SearchToolbar(controller:c),Padding(padding:const EdgeInsets.symmetric(horizontal:16),child:Align(alignment:Alignment.centerLeft,child:Text('${c.filtered.length} inspections',style:const TextStyle(color:Color(0xff596970))))),Expanded(child:InspectionList(controller:c))]);
-      final detail=record==null?const Center(child:Column(mainAxisSize:MainAxisSize.min,children:[Icon(Icons.assignment_outlined,size:64,color:Color(0xff8ca6a1)),SizedBox(height:16),Text('Select an inspection')])):InspectionDetail(record:record,controller:c);
+      final detail=record==null?const Center(child:Column(mainAxisSize:MainAxisSize.min,children:[Icon(Icons.assignment_outlined,size:64,color:Color(0xff8ca6a1)),SizedBox(height:16),Text('Select an inspection')])):InspectionDetail(record:record,controller:c,attachments:AttachmentPanel(key:ValueKey('${record.id}-${c.sync.lastSuccess}'),record:record.id,controller:c),history:HistoryPanel(store:c.store,record:record.id));
       if(constraints.maxWidth<850){return record==null?list:detail;}
       return Row(children:[SizedBox(width:400,child:list),const VerticalDivider(width:1),Expanded(child:detail)]);
     }))]));
