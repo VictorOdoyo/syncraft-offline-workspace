@@ -64,11 +64,18 @@ flutter run -d chrome --web-port 5176 --web-hostname 127.0.0.1
 ```
 
 Service-worker offline reloads are verified against the release build, not the
-Flutter development server. Build with `flutter build web --release
---no-web-resources-cdn`, then run `node scripts/package-offline.mjs` from the root.
+Flutter development server. Build from `apps/field`:
+
+```bash
+flutter build web --release --no-web-resources-cdn
+```
+
+Then run `node scripts/package-offline.mjs` from the repository root.
 Native Windows and Android target scaffolds are included; web is the primary
-end-to-end tested target. Android emulator API access uses a build-time
-`--dart-define=API_URL=http://10.0.2.2:8091` with an appropriately bound API.
+end-to-end tested target. Android release builds require an HTTPS API configured
+with `--dart-define=API_URL=https://your-api.example`. Release networking rejects
+cleartext traffic, and automatic Android backups are disabled so recovery remains
+an explicit user action. Native release builds have not been device-verified.
 
 ## Verification
 
@@ -83,7 +90,20 @@ flutter test --coverage
 Set `TEST_DATABASE_URL` to a disposable PostgreSQL database to enable persistence
 and concurrency integration tests. CI uses PostgreSQL 17 and runs Go race tests,
 Flutter analysis, unit/widget tests, release builds, and container health checks.
-Coverage artifacts are retained by CI. Browser verification uses Playwright.
+Coverage artifacts are retained by CI. With the release client and demo API
+running on the documented ports, run the browser suite from the repository root:
+
+```bash
+npm ci
+npx playwright install chromium
+npm run test:e2e
+```
+
+Playwright checks offline creation and cache reload, reconnection, two-device
+concurrent edits, and explicit conflict resolution at desktop and mobile sizes.
+Screenshot pixel checks reject blank renders. CI runs this suite against Compose
+and retains HTML reports, screenshots, and failure traces. The tests create
+fictional inspections and should only target a disposable demo workspace.
 
 ## Architecture
 
