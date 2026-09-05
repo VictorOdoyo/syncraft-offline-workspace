@@ -73,18 +73,15 @@ class _AttachmentPanelState extends State<AttachmentPanel> {
             onPressed: busy
                 ? null
                 : () => run(() async {
-                    final picked = await FilePicker.platform.pickFiles(
+                    final file = await FilePicker.pickFile(
                       type: FileType.custom,
                       allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'txt'],
-                      withData: true,
                     );
-                    if (picked == null) {
+                    if (file == null) {
                       return;
                     }
-                    final file = picked.files.single;
-                    if (file.bytes == null) {
-                      throw const FormatException('File could not be read');
-                    }
+                    if (file.size > 5 * 1024 * 1024) { throw const FormatException('Attachment exceeds 5 MiB'); }
+                    final bytes = await file.readAsBytes();
                     final media = switch (file.extension?.toLowerCase()) {
                       'jpg' || 'jpeg' => 'image/jpeg',
                       'png' => 'image/png',
@@ -95,7 +92,7 @@ class _AttachmentPanelState extends State<AttachmentPanel> {
                       widget.record,
                       file.name,
                       media,
-                      file.bytes!,
+                      bytes,
                     );
                     unawaited(widget.controller.sync.synchronize());
                   }),
@@ -134,7 +131,7 @@ class _AttachmentPanelState extends State<AttachmentPanel> {
             icon: const Icon(Icons.download),
             onPressed: () async {
               try {
-                await FilePicker.platform.saveFile(
+                await FilePicker.saveFile(
                   fileName: row['name'] as String,
                   bytes: await store.bytes(row['id'] as String),
                 );

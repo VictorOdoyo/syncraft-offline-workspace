@@ -53,11 +53,11 @@ class _RecoveryPanelState extends State<RecoveryPanel> {
                 final bytes = await RecoveryBundle.export(
                   widget.controller.store,
                 );
-                await FilePicker.platform.saveFile(
+                final saved = await FilePicker.saveFile(
                   fileName: 'syncraft-recovery.json',
                   bytes: bytes,
                 );
-                return 'Recovery export prepared.';
+                return saved == null ? 'Export cancelled.' : 'Recovery export saved.';
               }),
         icon: const Icon(Icons.save_alt),
         label: const Text('Export recovery file'),
@@ -70,10 +70,9 @@ class _RecoveryPanelState extends State<RecoveryPanel> {
                 widget.controller.inspections.isNotEmpty
             ? null
             : () => run(() async {
-                final file = await FilePicker.platform.pickFiles(
+                final file = await FilePicker.pickFile(
                   type: FileType.custom,
                   allowedExtensions: ['json'],
-                  withData: true,
                 );
                 if (file == null) {
                   return 'Restore cancelled.';
@@ -87,12 +86,8 @@ class _RecoveryPanelState extends State<RecoveryPanel> {
                     )) {
                   return 'Restore cancelled.';
                 }
-                final bytes = file.files.single.bytes;
-                if (bytes == null) {
-                  throw const FormatException(
-                    'Recovery file could not be read',
-                  );
-                }
+                if (file.size > RecoveryBundle.maxBytes) { throw const FormatException('Recovery file exceeds 50 MiB'); }
+                final bytes = await file.readAsBytes();
                 final count = await RecoveryBundle.restore(
                   widget.controller.store,
                   bytes,
