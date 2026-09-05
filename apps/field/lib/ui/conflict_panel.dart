@@ -66,7 +66,7 @@ class ConflictPanel extends StatelessWidget {
                       left: BorderSide(color: Color(0xffb42336), width: 3),
                     ),
                   ),
-                  child: SelectableText(version.value),
+                  child: SelectionArea(child: Text(version.value)),
                 ),
             ],
           ),

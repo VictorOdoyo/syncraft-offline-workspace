@@ -191,7 +191,7 @@ class InspectionDetail extends StatelessWidget {
           ),
         ],
       ),
-      SelectableText(record.value('notes', 'No notes recorded.')),
+      SelectionArea(child: Text(record.value('notes', 'No notes recorded.'))),
       const SizedBox(height: 24),
       const Text(
         'Inspection checks',

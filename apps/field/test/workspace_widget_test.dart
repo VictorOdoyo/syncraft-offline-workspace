@@ -50,6 +50,7 @@ void main() {
     },
   );
   testWidgets('concurrent values remain separately visible', (tester) async {
+    final semantics = tester.ensureSemantics();
     late LocalStore store;
     await tester.runAsync(() async {
       sqfliteFfiInit();
@@ -76,7 +77,10 @@ void main() {
     );
     expect(find.text('North reading'), findsOneWidget);
     expect(find.text('South reading'), findsOneWidget);
+    expect(find.bySemanticsLabel('North reading'), findsOneWidget);
+    expect(find.bySemanticsLabel('South reading'), findsOneWidget);
     expect(find.text('Resolve'), findsOneWidget);
+    semantics.dispose();
     await tester.pumpWidget(const SizedBox());
     c.dispose();
     sync.dispose();
