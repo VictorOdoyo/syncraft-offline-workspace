@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../data/local_store.dart';
+import '../data/attachment_store.dart';
 import 'api_client.dart';
 
 class SyncEngine extends ChangeNotifier {
@@ -35,6 +36,7 @@ class SyncEngine extends ChangeNotifier {
         final page=Map<String,dynamic>.from(await api.get('/api/v1/sync/pull?after=${await store.cursor()}') as Map);
         await store.applyPage(page);if(page['more']!=true){break;}
       }
+      await AttachmentStore(store).uploadPending(api);
       lastSuccess=DateTime.now();failures=0;
     }catch(e){error=e.toString();failures++;if(e is ApiFailure && (e.status==401||e.status==403)){connected=false;api.token=null;}}
     finally{busy=false;_notify();}
