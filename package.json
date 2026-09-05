@@ -1,0 +1,7 @@
+{
+  "name": "syncraft-browser-verification",
+  "private": true,
+  "type": "module",
+  "scripts": {"test:e2e": "playwright test", "package:offline": "node scripts/package-offline.mjs"},
+  "devDependencies": {"@playwright/test": "^1.55.0", "pngjs": "^7.0.0"}
+}

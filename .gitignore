@@ -4,6 +4,8 @@
 .flutter-plugins-dependencies
 build/
 coverage/
+coverage
+coverage.out
 *.db
 *.db-shm
 *.db-wal
