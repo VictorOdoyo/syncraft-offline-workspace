@@ -69,6 +69,19 @@ jobs:
       - run: docker compose up --build -d --wait --wait-timeout 180
       - run: curl --fail http://127.0.0.1:8091/health/ready
       - run: curl --fail http://127.0.0.1:5176/offline-sw.js
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-verification
+          path: |
+            playwright-report
+            test-results
       - if: always()
         run: docker compose logs --no-color
       - if: always()
