@@ -1,4 +1,38 @@
 package auth
-import("testing";"time";"github.com/golang-jwt/jwt/v5")
-func TestLoginAndScope(t *testing.T){s:=Service{Secret:[]byte("test-secret-at-least-thirty-two-bytes"),Users:DemoUsers()};token,err:=s.Login("inspector","local-demo");if err!=nil{t.Fatal(err)};c,err:=s.Verify(token);if err!=nil || c.Workspace!="demo" || c.Role!="editor"{t.Fatal(c,err)};if _,err=s.Login("inspector","wrong");err==nil{t.Fatal("password accepted")};delete(s.Users,"inspector");if _,err=s.Verify(token);err==nil{t.Fatal("removed identity accepted")}}
-func TestExpiredAndTamperedTokens(t *testing.T){s:=Service{Secret:[]byte("secret"),Users:DemoUsers()};c:=Claims{Workspace:"demo",Role:"editor",RegisteredClaims:jwt.RegisteredClaims{Subject:"inspector",Issuer:"syncraft",Audience:jwt.ClaimStrings{"syncraft-field"},ExpiresAt:jwt.NewNumericDate(time.Now().Add(-time.Hour))}};token,_:=jwt.NewWithClaims(jwt.SigningMethodHS256,c).SignedString(s.Secret);if _,err:=s.Verify(token);err==nil{t.Fatal("expired token accepted")};token,_=s.Login("inspector","local-demo");if _,err:=s.Verify(token+"x");err==nil{t.Fatal("tampered token accepted")}}
+
+import (
+	"github.com/golang-jwt/jwt/v5"
+	"testing"
+	"time"
+)
+
+func TestLoginAndScope(t *testing.T) {
+	s := Service{Secret: []byte("test-secret-at-least-thirty-two-bytes"), Users: DemoUsers()}
+	token, err := s.Login("inspector", "local-demo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, err := s.Verify(token)
+	if err != nil || c.Workspace != "demo" || c.Role != "editor" {
+		t.Fatal(c, err)
+	}
+	if _, err = s.Login("inspector", "wrong"); err == nil {
+		t.Fatal("password accepted")
+	}
+	delete(s.Users, "inspector")
+	if _, err = s.Verify(token); err == nil {
+		t.Fatal("removed identity accepted")
+	}
+}
+func TestExpiredAndTamperedTokens(t *testing.T) {
+	s := Service{Secret: []byte("secret"), Users: DemoUsers()}
+	c := Claims{Workspace: "demo", Role: "editor", RegisteredClaims: jwt.RegisteredClaims{Subject: "inspector", Issuer: "syncraft", Audience: jwt.ClaimStrings{"syncraft-field"}, ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour))}}
+	token, _ := jwt.NewWithClaims(jwt.SigningMethodHS256, c).SignedString(s.Secret)
+	if _, err := s.Verify(token); err == nil {
+		t.Fatal("expired token accepted")
+	}
+	token, _ = s.Login("inspector", "local-demo")
+	if _, err := s.Verify(token + "x"); err == nil {
+		t.Fatal("tampered token accepted")
+	}
+}
