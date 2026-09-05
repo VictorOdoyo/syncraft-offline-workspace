@@ -34,7 +34,7 @@ func (s *Server) upload(w http.ResponseWriter, r *http.Request) {
 	}
 	sum := sha256.Sum256(data)
 	a := domain.Attachment{ID: id, Record: record, Name: name, Type: media, SHA256: hex.EncodeToString(sum[:]), Size: len(data), Data: data}
-	if err = s.Store.PutAttachment(r.Context(), c.Workspace, c.Subject, a); err != nil {
+	if err = s.Store.PutAttachment(r.Context(), c.Workspace, r.Header.Get("X-Device-ID"), c.Subject, a); err != nil {
 		problem(w, err)
 		return
 	}

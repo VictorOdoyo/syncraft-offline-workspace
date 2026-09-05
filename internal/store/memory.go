@@ -128,10 +128,14 @@ func (m *Memory) Audit(_ context.Context, w string, after int64, limit int) ([]d
 	end := min(int(start)+limit, len(s.audit))
 	return append([]domain.Audit{}, s.audit[start:end]...), nil
 }
-func (m *Memory) PutAttachment(_ context.Context, w, actor string, a domain.Attachment) error {
+func (m *Memory) PutAttachment(_ context.Context, w, device, actor string, a domain.Attachment) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	s := m.space(w)
+	d, ok := s.devices[device]
+	if !ok || d.Revoked || d.Actor != actor {
+		return domain.ErrForbidden
+	}
 	if old, ok := s.attachments[a.ID]; ok {
 		if old.SHA256 != a.SHA256 || old.Record != a.Record || old.Name != a.Name || old.Type != a.Type {
 			return domain.ErrConflict

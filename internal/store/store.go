@@ -13,7 +13,7 @@ type Store interface {
 	Push(context.Context, string, string, string, []domain.Operation) (int64, error)
 	Pull(context.Context, string, int64, int) (domain.Page, error)
 	Audit(context.Context, string, int64, int) ([]domain.Audit, error)
-	PutAttachment(context.Context, string, string, domain.Attachment) error
+	PutAttachment(context.Context, string, string, string, domain.Attachment) error
 	GetAttachment(context.Context, string, string) (domain.Attachment, error)
 	Attachments(context.Context, string, string) ([]domain.Attachment, error)
 	Ping(context.Context) error

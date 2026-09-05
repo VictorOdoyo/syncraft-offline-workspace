@@ -7,8 +7,13 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func (p *Postgres) PutAttachment(ctx context.Context, w, actor string, a domain.Attachment) error {
+func (p *Postgres) PutAttachment(ctx context.Context, w, device, actor string, a domain.Attachment) error {
 	return p.write(ctx, w, func(tx pgx.Tx) error {
+		var owner string
+		var revoked bool
+		if err := tx.QueryRow(ctx, "SELECT actor,revoked FROM devices WHERE workspace=$1 AND id=$2", w, device).Scan(&owner, &revoked); err != nil || revoked || owner != actor {
+			return domain.ErrForbidden
+		}
 		var hash, record, name, media string
 		err := tx.QueryRow(ctx, "SELECT sha256,record::text,name,media_type FROM attachments WHERE workspace=$1 AND id=$2", w, a.ID).Scan(&hash, &record, &name, &media)
 		if err == nil {

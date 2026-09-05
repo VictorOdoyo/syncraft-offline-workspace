@@ -31,7 +31,10 @@ func TestPostgresAttachmentIsolation(t *testing.T) {
 	}
 	defer p.Close()
 	a := domain.Attachment{ID: uid(201), Record: uid(202), Name: "inspection.txt", Type: "text/plain", SHA256: "fixture", Data: []byte("observed")}
-	if err = p.PutAttachment(ctx, "attachment-test", "author", a); err != nil {
+	if err = p.Register(ctx, "attachment-test", domain.Device{ID: uid(1), Actor: "author", Name: "Test device"}); err != nil {
+		t.Fatal(err)
+	}
+	if err = p.PutAttachment(ctx, "attachment-test", uid(1), "author", a); err != nil {
 		t.Fatal(err)
 	}
 	got, err := p.GetAttachment(ctx, "attachment-test", a.ID)
