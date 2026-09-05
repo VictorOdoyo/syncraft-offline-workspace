@@ -1,6 +1,5 @@
 .git
 apps/field/.dart_tool
-apps/field/build
 node_modules
 local
 coverage

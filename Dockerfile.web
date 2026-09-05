@@ -1,0 +1,5 @@
+FROM nginx:1.29-alpine
+COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
+COPY apps/field/build/web /usr/share/nginx/html
+EXPOSE 80
+HEALTHCHECK --interval=15s --timeout=3s CMD wget -q -O /dev/null http://127.0.0.1/ || exit 1
