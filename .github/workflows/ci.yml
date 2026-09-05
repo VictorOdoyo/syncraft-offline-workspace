@@ -1,0 +1,75 @@
+name: Verify Syncraft
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: syncraft
+          POSTGRES_PASSWORD: test-only
+          POSTGRES_DB: syncraft_test
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U syncraft" --health-interval 5s --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgres://syncraft:test-only@localhost:5432/syncraft_test?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go vet ./...
+      - run: go test -race -coverprofile=coverage.out ./...
+      - run: go build ./cmd/server
+      - uses: actions/upload-artifact@v4
+        with:
+          name: go-coverage
+          path: coverage.out
+  flutter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: flutter pub get --enforce-lockfile
+        working-directory: apps/field
+      - run: flutter analyze
+        working-directory: apps/field
+      - run: flutter test --coverage
+        working-directory: apps/field
+      - run: flutter build web --release --no-web-resources-cdn
+        working-directory: apps/field
+      - run: node scripts/package-offline.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flutter-web
+          path: apps/field/build/web
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flutter-coverage
+          path: apps/field/coverage
+  containers:
+    needs: [backend, flutter]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: flutter-web
+          path: apps/field/build/web
+      - run: docker compose up --build -d --wait --wait-timeout 180
+      - run: curl --fail http://127.0.0.1:8091/health/ready
+      - run: curl --fail http://127.0.0.1:5176/offline-sw.js
+      - if: always()
+        run: docker compose logs --no-color
+      - if: always()
+        run: docker compose down -v
