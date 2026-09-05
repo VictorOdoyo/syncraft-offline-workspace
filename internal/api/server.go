@@ -13,6 +13,7 @@ import (
 )
 
 type Server struct {
+	Metrics Metrics
 	Store   store.Store
 	Auth    *auth.Service
 	Origins []string
@@ -40,6 +41,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/attachments/{id}", s.download)
 	mux.HandleFunc("GET /api/v1/attachments", s.attachments)
 	mux.HandleFunc("GET /api/v1/events", s.events)
+	mux.HandleFunc("GET /api/v1/metrics", s.metrics)
 	return s.middleware(mux)
 }
 func write(w http.ResponseWriter, status int, value any) {
@@ -193,6 +195,7 @@ func (s *Server) push(w http.ResponseWriter, r *http.Request) {
 	}
 	s.Hub.Notify(c.Workspace)
 	write(w, 200, map[string]int64{"cursor": cursor})
+	s.Metrics.Pushes.Add(1)
 }
 func cursor(r *http.Request) (int64, error) {
 	v := r.URL.Query().Get("after")
@@ -221,6 +224,7 @@ func (s *Server) pull(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	write(w, 200, page)
+	s.Metrics.Pulls.Add(1)
 }
 func (s *Server) audit(w http.ResponseWriter, r *http.Request) {
 	c, ok := s.identity(w, r, false, true)

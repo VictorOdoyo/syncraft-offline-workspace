@@ -18,6 +18,7 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 	var mu sync.Mutex
 	buckets := map[string]bucket{}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s.Metrics.Requests.Add(1)
 		nonce := make([]byte, 12)
 		_, _ = rand.Read(nonce)
 		w.Header().Set("X-Request-ID", hex.EncodeToString(nonce))
