@@ -7,13 +7,14 @@ import (
 	"github.com/VictorOdoyo/syncraft-offline-workspace/internal/domain"
 	"sync"
 	"testing"
+	"time"
 )
 
 func uid(i int) string { return fmt.Sprintf("00000000-0000-4000-8000-%012d", i) }
 func contract(t *testing.T, s Store) {
 	t.Helper()
 	ctx := context.Background()
-	w := "test-" + uid(1)
+	w := fmt.Sprintf("test-%d", time.Now().UnixNano())
 	d := domain.Device{ID: uid(1), Actor: "author", Name: "Tablet"}
 	if err := s.Register(ctx, w, d); err != nil {
 		t.Fatal(err)

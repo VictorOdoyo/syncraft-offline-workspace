@@ -80,7 +80,9 @@ class _AttachmentPanelState extends State<AttachmentPanel> {
                     if (file == null) {
                       return;
                     }
-                    if (file.size > 5 * 1024 * 1024) { throw const FormatException('Attachment exceeds 5 MiB'); }
+                    if (await file.length() > 5 * 1024 * 1024) {
+                      throw const FormatException('Attachment exceeds 5 MiB');
+                    }
                     final bytes = await file.readAsBytes();
                     final media = switch (file.extension?.toLowerCase()) {
                       'jpg' || 'jpeg' => 'image/jpeg',
@@ -88,12 +90,7 @@ class _AttachmentPanelState extends State<AttachmentPanel> {
                       'pdf' => 'application/pdf',
                       _ => 'text/plain',
                     };
-                    await store.add(
-                      widget.record,
-                      file.name,
-                      media,
-                      bytes,
-                    );
+                    await store.add(widget.record, file.name, media, bytes);
                     unawaited(widget.controller.sync.synchronize());
                   }),
             icon: const Icon(Icons.attach_file),
