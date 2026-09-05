@@ -45,6 +45,7 @@ dependencies:
   uuid: ^4.6.0
   crypto: ^3.0.7
   file_picker: ^12.2.0
+  sqflite_common: ^2.5.11
 
 dev_dependencies:
   flutter_test:

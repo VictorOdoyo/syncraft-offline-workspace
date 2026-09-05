@@ -1,4 +1,5 @@
 import 'package:crdt/map_crdt.dart';
+
 import 'operation.dart';
 
 /// Immutable operation keys are replicated by the CRDT; frontiers preserve field conflicts.
@@ -12,21 +13,30 @@ class Replica {
     for (final op in incoming) {
       final existing = staged[op.id];
       if (existing != null) {
-        if (!existing.equivalent(op)) { throw const FormatException('Immutable operation ID collision'); }
+        if (!existing.equivalent(op)) {
+          throw const FormatException('Immutable operation ID collision');
+        }
         continue;
       }
       for (final parent in op.parents) {
         final previous = staged[parent];
-        if (previous == null || previous.record != op.record || previous.field != op.field) {
+        if (previous == null ||
+            previous.record != op.record ||
+            previous.field != op.field) {
           throw const FormatException('Missing or invalid causal parent');
         }
       }
       staged[op.id] = op;
       additions[op.id] = op.toJson();
     }
-    if (additions.isNotEmpty) { await _crdt.putAll({'operations': additions}); }
-    _operations..clear()..addAll(staged);
+    if (additions.isNotEmpty) {
+      await _crdt.putAll({'operations': additions});
+    }
+    _operations
+      ..clear()
+      ..addAll(staged);
   }
+
   Future<void> merge(Replica remote) async {
     // Validate IDs and parent references before invoking the package merge.
     await addAll(remote.operations);

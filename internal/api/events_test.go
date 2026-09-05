@@ -1,4 +1,60 @@
 package api
-import("context";"encoding/json";"net/http/httptest";"strings";"testing";"time";"github.com/coder/websocket")
-func TestWebsocketHintsAndRevocation(t *testing.T){s,h,token:=fixture(t);server:=httptest.NewServer(h);defer server.Close();ctx,cancel:=context.WithTimeout(context.Background(),5*time.Second);defer cancel();c,_,err:=websocket.Dial(ctx,"ws"+strings.TrimPrefix(server.URL,"http")+"/api/v1/events",nil);if err!=nil{t.Fatal(err)};defer c.CloseNow();hello,_:=json.Marshal(map[string]string{"token":token,"device":deviceID});if err=c.Write(ctx,websocket.MessageText,hello);err!=nil{t.Fatal(err)};_,raw,err:=c.Read(ctx);if err!=nil || !strings.Contains(string(raw),"sync-needed"){t.Fatal(string(raw),err)};if err=s.Store.Revoke(ctx,"demo",deviceID,"inspector");err!=nil{t.Fatal(err)};s.Hub.Notify("demo");if _,_,err=c.Read(ctx);websocket.CloseStatus(err)!=websocket.StatusPolicyViolation{t.Fatal(err)}}
-func TestHubIsolationAndCleanup(t *testing.T){h:=NewHub();a,remove:=h.subscribe("a");defer remove();b,removeB:=h.subscribe("b");removeB();h.Notify("a");select{case <-a:default:t.Fatal("missing hint")};select{case <-b:t.Fatal("cross workspace notification");default:};if len(h.listeners["b"])!=0{t.Fatal("subscription leak")}}
+
+import (
+	"context"
+	"encoding/json"
+	"github.com/coder/websocket"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+)
+
+func TestWebsocketHintsAndRevocation(t *testing.T) {
+	s, h, token := fixture(t)
+	server := httptest.NewServer(h)
+	defer server.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	c, _, err := websocket.Dial(ctx, "ws"+strings.TrimPrefix(server.URL, "http")+"/api/v1/events", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.CloseNow()
+	hello, _ := json.Marshal(map[string]string{"token": token, "device": deviceID})
+	if err = c.Write(ctx, websocket.MessageText, hello); err != nil {
+		t.Fatal(err)
+	}
+	_, raw, err := c.Read(ctx)
+	if err != nil || !strings.Contains(string(raw), "sync-needed") {
+		t.Fatal(string(raw), err)
+	}
+	if err = s.Store.Revoke(ctx, "demo", deviceID, "inspector"); err != nil {
+		t.Fatal(err)
+	}
+	s.Hub.Notify("demo")
+	if _, _, err = c.Read(ctx); websocket.CloseStatus(err) != websocket.StatusPolicyViolation {
+		t.Fatal(err)
+	}
+}
+func TestHubIsolationAndCleanup(t *testing.T) {
+	h := NewHub()
+	a, remove := h.subscribe("a")
+	defer remove()
+	b, removeB := h.subscribe("b")
+	removeB()
+	h.Notify("a")
+	select {
+	case <-a:
+	default:
+		t.Fatal("missing hint")
+	}
+	select {
+	case <-b:
+		t.Fatal("cross workspace notification")
+	default:
+	}
+	if len(h.listeners["b"]) != 0 {
+		t.Fatal("subscription leak")
+	}
+}
