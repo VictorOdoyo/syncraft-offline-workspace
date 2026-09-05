@@ -105,6 +105,7 @@ class InspectionDetail extends StatelessWidget {
           SizedBox(
             width: 180,
             child: DropdownButtonFormField<String>(
+              isExpanded: true,
               initialValue: record.status,
               key: ValueKey('${record.id}-${record.status}'),
               decoration: const InputDecoration(labelText: 'Status'),
@@ -135,6 +136,7 @@ class InspectionDetail extends StatelessWidget {
           SizedBox(
             width: 180,
             child: DropdownButtonFormField<String>(
+              isExpanded: true,
               initialValue: record.priority,
               key: ValueKey('${record.id}-${record.priority}'),
               decoration: const InputDecoration(labelText: 'Priority'),

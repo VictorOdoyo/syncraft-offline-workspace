@@ -52,6 +52,7 @@ class _SearchToolbarState extends State<SearchToolbar> {
               SizedBox(
                 width: 160,
                 child: DropdownButtonFormField<String>(
+                  isExpanded: true,
                   key: ValueKey('status-${c.status}'),
                   initialValue: c.status,
                   decoration: const InputDecoration(labelText: 'Status'),
@@ -67,6 +68,7 @@ class _SearchToolbarState extends State<SearchToolbar> {
               SizedBox(
                 width: 160,
                 child: DropdownButtonFormField<String>(
+                  isExpanded: true,
                   key: ValueKey('priority-${c.priority}'),
                   initialValue: c.priority,
                   decoration: const InputDecoration(labelText: 'Priority'),

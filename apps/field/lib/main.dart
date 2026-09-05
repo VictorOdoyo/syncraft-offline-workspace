@@ -143,7 +143,9 @@ class _WorkspaceScreenState extends State<WorkspaceScreen>
             children: [
               Icon(Icons.hub_outlined, color: Color(0xff087f72)),
               SizedBox(width: 10),
-              Text('Syncraft'),
+              Flexible(
+                child: Text('Syncraft', overflow: TextOverflow.ellipsis),
+              ),
             ],
           ),
           actions: [
